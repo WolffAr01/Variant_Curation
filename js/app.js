@@ -16,6 +16,32 @@
     return '<a href="' + esc(url) + '" target="_blank" rel="noopener">' + esc(text || url) + "</a>";
   }
 
+  // A link plus an "Open beside" button. Every button loads into the same
+  // pop-up window placed on the right half of the screen, so sites can be
+  // read next to the report (they refuse to be shown inside the page).
+  function sideButton(url) {
+    return '<button type="button" class="secondary side" data-url="' + esc(url) + '">Open beside</button>';
+  }
+
+  function sideLink(url, text) {
+    return link(url, text) + " " + sideButton(url);
+  }
+
+  function openBeside(url) {
+    const w = Math.round(screen.availWidth / 2);
+    const h = screen.availHeight;
+    const left = (screen.availLeft || 0) + screen.availWidth - w;
+    const top = screen.availTop || 0;
+    const win = window.open(url, "curation-side", "popup,width=" + w + ",height=" + h + ",left=" + left + ",top=" + top);
+    if (win) win.focus();
+    else location.assign(url); // pop-ups blocked: fall back to a normal visit
+  }
+
+  $("result").addEventListener("click", (ev) => {
+    const btn = ev.target.closest("button.side");
+    if (btn) openBeside(btn.dataset.url);
+  });
+
   // Fetch a refsnp record, following a merge to the current rsID once.
   async function fetchRefsnp(id, note) {
     const res = await fetch(API + id);
@@ -81,12 +107,12 @@
             (r.grch37 ? '<div class="muted">GRCh37: chr' + esc(r.grch37.chrom) + ":" + esc(r.grch37.position) + "</div>" : "") + "</dd>" +
           "<dt>Alleles in dbSNP</dt><dd>" + esc(r.allAlleles) + "</dd>" +
           "<dt>Variation type</dt><dd>" + esc(r.variantType) + "</dd>" +
-          "<dt>dbSNP page</dt><dd>" + link(r.dbsnpUrl) + "</dd>" +
+          "<dt>dbSNP page</dt><dd>" + sideLink(r.dbsnpUrl) + "</dd>" +
         "</dl>" +
         "<h3>1. Variant type <span class=\"src\">Gene : Consequence</span></h3><ul>" + genes + "</ul>" +
         "<h3>2. Frequency</h3><ul class=\"plain\">" + freqs + "</ul>" +
         "<h3>Clinical Significance <span class=\"src\">allele " + esc(r.matched) + "</span></h3>" +
-          (r.clinvarAlleleUrl ? "<p>ClinVar link for this allele (allele ID " + esc(r.alleleId) + "): " + link(r.clinvarAlleleUrl) + "</p>" : "") +
+          (r.clinvarAlleleUrl ? "<p>ClinVar link for this allele (allele ID " + esc(r.alleleId) + "): " + sideLink(r.clinvarAlleleUrl) + "</p>" : "") +
           clin +
         '<p class="muted">dbSNP build ' + esc(r.build) + ". " + link(RAW_DBSNP + r.rsid.slice(2), "Raw dbSNP data") + "</p>" +
       "</details>" +
@@ -137,7 +163,7 @@
       const stars = "&#9733;".repeat(c.stars) + '<span class="off">' + "&#9733;".repeat(4 - c.stars) + "</span>";
       box.innerHTML =
         '<dl class="facts">' +
-          "<dt>Description</dt><dd><strong>" + link(c.url, c.title || "Variation " + c.variationId) + "</strong></dd>" +
+          "<dt>Description</dt><dd><strong>" + link(c.url, c.title || "Variation " + c.variationId) + "</strong> " + sideButton(c.url) + "</dd>" +
           "<dt>Classification</dt><dd><strong>" + esc(c.classification) + "</strong>" +
             (c.breakdown ? "<div>" + esc(c.breakdown) + "</div>" : "") + "</dd>" +
           '<dt>Review status</dt><dd><span class="stars">' + stars + "</span> " + esc(c.reviewStatus) + "</dd>" +
@@ -152,29 +178,6 @@
     }
   }
 
-  // "Show here" button: loads the site in a frame under the link. Sites that
-  // forbid framing show a blank or refused box, so the link stays as backup.
-  function addEmbed(box, url) {
-    const btn = document.createElement("button");
-    btn.type = "button";
-    btn.className = "secondary";
-    btn.textContent = "Show here";
-    const holder = document.createElement("div");
-    btn.addEventListener("click", () => {
-      if (holder.firstChild) {
-        holder.innerHTML = "";
-        btn.textContent = "Show here";
-        return;
-      }
-      holder.innerHTML =
-        '<p class="muted">Blank or "refused to connect"? This site doesn\'t allow being shown inside other pages. Use the link above.</p>' +
-        '<iframe class="embed" src="' + esc(url) + '" title="Embedded site" referrerpolicy="no-referrer-when-downgrade"></iframe>';
-      btn.textContent = "Hide";
-    });
-    box.appendChild(btn);
-    box.appendChild(holder);
-  }
-
   // Varsome takes the same chrom-pos-ref-alt ID as gnomAD. Without one, fall
   // back to the rsID, where Varsome asks you to pick the allele.
   function showVarsome(r, id) {
@@ -185,10 +188,9 @@
     state.varsome = url;
     updateText();
     $("varsome").innerHTML =
-      "<p>" + link(url, "Open " + (id ? "chr" + id : r.rsid) + " on Varsome") + "</p>" +
+      "<p>" + sideLink(url, "Open " + (id ? "chr" + id : r.rsid) + " on Varsome") + "</p>" +
       '<p class="muted">Click Germline Classification on that page for the ACMG rules.' +
       (id ? "" : " Select " + esc(r.matched) + " from the options at the top.") + "</p>";
-    addEmbed($("varsome"), url);
     showFranklin(r, id);
   }
 
@@ -199,10 +201,9 @@
       ? "https://franklin.genoox.com/clinical-db/variant/snp/chr" + id + "-hg38"
       : "https://franklin.genoox.com/clinical-db/home";
     $("franklin").innerHTML =
-      "<p>" + link(url, id ? "Open chr" + id + " on Franklin" : "Search Franklin for " + r.rsid) + "</p>" +
+      "<p>" + sideLink(url, id ? "Open chr" + id + " on Franklin" : "Search Franklin for " + r.rsid) + "</p>" +
       '<p class="muted">Read the Suggested Classification and the met evidence; the UNMET lines can be skipped.' +
       (id ? "" : " Search for " + esc(r.rsid) + " and select " + esc(r.matched) + ".") + "</p>";
-    addEmbed($("franklin"), url);
   }
 
   // Convert dbSNP's allele to gnomAD's variant ID, then read the Total column.
@@ -235,7 +236,7 @@
         : "<p>No in silico predictors listed.</p>";
       box.innerHTML =
         '<dl class="facts">' +
-          "<dt>Variant</dt><dd>" + link(GnomAD.pageUrl(g.variantId), g.variantId + " (GRCh38)") + "</dd>" +
+          "<dt>Variant</dt><dd>" + sideLink(GnomAD.pageUrl(g.variantId), g.variantId + " (GRCh38)") + "</dd>" +
           "<dt>Total</dt><dd>Allele count " + esc(g.ac) + ", allele number " + esc(g.an) + ", frequency " + esc(g.af) +
             '<div class="muted">Exomes + genomes' + (g.sources.length < 2 ? " (" + esc(g.sources.join("")) + " only)" : "") +
             (g.filters.length ? "; filters: " + esc(g.filters.join(", ")) : "") + "</div></dd>" +
@@ -266,7 +267,7 @@
         '<dl class="facts">' +
           "<dt>GERP at variant</dt><dd><strong>" + (g.atVariant === null ? "no score at this base" : esc(g.atVariant)) + "</strong>" +
             '<div class="muted">chr' + esc(chrom) + ":" + esc(pos) + " (hg19)</div></dd>" +
-          "<dt>Browser view</dt><dd>" + link(url, "Open in UCSC (variant highlighted)") + "</dd>" +
+          "<dt>Browser view</dt><dd>" + sideLink(url, "Open in UCSC (variant highlighted)") + "</dd>" +
         "</dl>";
     } catch (e) {
       box.innerHTML = '<div class="error">Could not load GERP scores. ' + link(url, "Open the UCSC browser view") + ".</div>";
