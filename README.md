@@ -5,7 +5,7 @@ A free webpage that takes an rsID, reference allele and nucleotide change (A, de
 1. Variant type: dbSNP Gene : Consequence
 2. Frequency: dbSNP frequency list plus the gnomAD v4 Total column and homozygote count
 3. Computational scores: gnomAD in silico predictors and UCSC GERP (hg19)
-4. ACMG information: ClinVar records and germline classification, plus a direct Varsome link
+4. ACMG information: ClinVar records and germline classification, plus direct Varsome and Franklin links
 
 Live page: https://wolffar01.github.io/Variant_Curation/
 

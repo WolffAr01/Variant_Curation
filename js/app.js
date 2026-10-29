@@ -101,6 +101,9 @@
       "</details>" +
       '<details class="card" open><summary><h2>Varsome <span class="src">link only</span></h2></summary>' +
         '<div id="varsome"><p class="muted">Preparing the Varsome link...</p></div>' +
+      "</details>" +
+      '<details class="card" open><summary><h2>Franklin <span class="src">link only</span></h2></summary>' +
+        '<div id="franklin"><p class="muted">Preparing the Franklin link...</p></div>' +
       "</details>";
 
     if (r.alleleId) loadClinVar(r);
@@ -162,6 +165,19 @@
       "<p>" + link(url, "Open " + (id ? "chr" + id : r.rsid) + " on Varsome") + "</p>" +
       '<p class="muted">Click Germline Classification on that page for the ACMG rules.' +
       (id ? "" : " Select " + esc(r.matched) + " from the options at the top.") + "</p>";
+    showFranklin(r, id);
+  }
+
+  // Franklin has no public API, so link to the variant page (hg38 form of the
+  // same chrom-pos-ref-alt ID). Without an ID, open Franklin's search page.
+  function showFranklin(r, id) {
+    const url = id
+      ? "https://franklin.genoox.com/clinical-db/variant/snp/chr" + id + "-hg38"
+      : "https://franklin.genoox.com/clinical-db/home";
+    $("franklin").innerHTML =
+      "<p>" + link(url, id ? "Open chr" + id + " on Franklin" : "Search Franklin for " + r.rsid) + "</p>" +
+      '<p class="muted">Read the Suggested Classification and the met evidence; the UNMET lines can be skipped.' +
+      (id ? "" : " Search for " + esc(r.rsid) + " and select " + esc(r.matched) + ".") + "</p>";
   }
 
   // Convert dbSNP's allele to gnomAD's variant ID, then read the Total column.
