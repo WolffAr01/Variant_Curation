@@ -1,0 +1,5 @@
+# Cloudflare Worker settings for the dbSNP relay (worker/relay.js).
+# The name must match the worker's name in the Cloudflare dashboard.
+name = "variant-relay"
+main = "worker/relay.js"
+compatibility_date = "2026-10-01"
