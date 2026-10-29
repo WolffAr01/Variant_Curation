@@ -214,8 +214,6 @@
         '<dl class="facts">' +
           "<dt>GERP at variant</dt><dd><strong>" + (g.atVariant === null ? "no score at this base" : esc(g.atVariant)) + "</strong>" +
             '<div class="muted">chr' + esc(chrom) + ":" + esc(pos) + " (hg19)</div></dd>" +
-          "<dt>Highest in window</dt><dd>" + (g.windowMax === null ? "no scores" : esc(g.windowMax) +
-            '<div class="muted">at chr' + esc(chrom) + ":" + esc(g.windowMaxPos) + ", window chr" + esc(chrom) + ":" + esc(g.window.start + 1) + "-" + esc(g.window.end) + "</div>") + "</dd>" +
           "<dt>Browser view</dt><dd>" + link(url, "Open in UCSC (variant highlighted)") + "</dd>" +
         "</dl>";
     } catch (e) {

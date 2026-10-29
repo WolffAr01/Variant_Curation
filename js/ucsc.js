@@ -22,17 +22,13 @@
     return Math.round(v * 100) / 100;
   }
 
-  // Score at the variant base and the highest score in the window.
+  // Score at the variant base.
   function extract(json, chrom, pos1) {
     const rows = scoreRows(json, chrom);
     const p0 = pos1 - 1;
     const at = rows.find((r) => r.start <= p0 && p0 < r.end);
-    let max = null;
-    for (const r of rows) if (max === null || r.value > max.value) max = r;
     return {
       atVariant: at ? round2(at.value) : null,
-      windowMax: max ? round2(max.value) : null,
-      windowMaxPos: max ? max.start + 1 : null,
       window: window37(pos1),
     };
   }
