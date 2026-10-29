@@ -27,12 +27,39 @@
     return link(url, text) + " " + sideButton(url);
   }
 
+  // Open (or reuse) a named window at an exact spot. The size given to
+  // window.open is the page area only, so title bars make windows overlap;
+  // the window first loads a blank page of ours so it can be moved and sized
+  // by its outer edges, then goes to `url`.
+  function placeWindow(name, left, top, width, height, url) {
+    const win = window.open("about:blank", name,
+      "popup,width=" + width + ",height=" + height + ",left=" + left + ",top=" + top);
+    if (!win) return null;
+    try {
+      win.moveTo(left, top);
+      win.resizeTo(width, height);
+    } catch (e) {
+      // Some browsers refuse; the window keeps its approximate spot.
+    }
+    if (url) win.location.href = url;
+    return win;
+  }
+
+  // Right half of the screen, split into `rows` equal slots.
+  function rightSlot(row, rows) {
+    const width = Math.round(screen.availWidth / 2);
+    const height = Math.floor(screen.availHeight / rows);
+    return {
+      left: (screen.availLeft || 0) + screen.availWidth - width,
+      top: (screen.availTop || 0) + row * height,
+      width,
+      height,
+    };
+  }
+
   function openBeside(url) {
-    const w = Math.round(screen.availWidth / 2);
-    const h = screen.availHeight;
-    const left = (screen.availLeft || 0) + screen.availWidth - w;
-    const top = screen.availTop || 0;
-    const win = window.open(url, "curation-side", "popup,width=" + w + ",height=" + h + ",left=" + left + ",top=" + top);
+    const s = rightSlot(0, 1);
+    const win = placeWindow("curation-side", s.left, s.top, s.width, s.height, url);
     if (win) win.focus();
     else location.assign(url); // pop-ups blocked: fall back to a normal visit
   }
@@ -43,25 +70,21 @@
   let autoWins = {};
 
   function openAutoWindows() {
-    const w = Math.round(screen.availWidth / 2);
-    const h = Math.round(screen.availHeight / 2);
-    const left = (screen.availLeft || 0) + screen.availWidth - w;
-    const top = screen.availTop || 0;
     const open = (name, row) => {
-      const win = window.open("", name, "popup,width=" + w + ",height=" + h + ",left=" + left + ",top=" + (top + row * h));
+      const slot = rightSlot(row, 2);
+      const win = placeWindow(name, slot.left, slot.top, slot.width, slot.height);
       if (win) {
         try {
           win.document.title = "Loading...";
           win.document.body.innerHTML = '<p style="font:15px system-ui;padding:16px">Waiting for the variant lookup...</p>';
         } catch (e) {
-          // The window still shows the previous variant's site; it is replaced shortly.
+          // Nothing to show; the address arrives shortly.
         }
       }
       return win;
     };
     autoWins = { varsome: open("curation-varsome", 0), franklin: open("curation-franklin", 1) };
-    const blocked = !autoWins.varsome || !autoWins.franklin;
-    $("popup-note").hidden = !blocked;
+    $("popup-note").hidden = !!(autoWins.varsome && autoWins.franklin);
   }
 
   function sendAutoWindow(which, url) {
