@@ -1,0 +1,4 @@
+{"data":{"variant":{"variant_id":"11-19185046-C-A",
+"exome":{"ac":26,"an":1460070,"homozygote_count":0,"filters":[]},
+"genome":{"ac":2,"an":152270,"homozygote_count":0,"filters":[]},
+"in_silico_predictors":[{"id":"cadd","value":"25.4"},{"id":"revel_max","value":"0.933"},{"id":"spliceai_ds_max","value":"0.00"},{"id":"pangolin_largest_ds","value":"0.00"},{"id":"phylop","value":"6.38"},{"id":"polyphen_max","value":"0.999"}]}}}

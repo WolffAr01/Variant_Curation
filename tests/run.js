@@ -48,4 +48,20 @@ assert.strictEqual(C.starsFor("reviewed by expert panel"), 3);
 assert.strictEqual(C.starsFor("criteria provided, multiple submitters, no conflicts"), 2);
 assert.strictEqual(C.starsFor("no assertion criteria provided"), 0);
 
+// gnomAD: variant ID from dbSNP's allele, Total column, predictors.
+const G = require("../js/gnomad.js");
+const snv = G.leftNormalize(r.grch38.spdi);
+assert.strictEqual(G.variantId("11", snv), "11-19185046-C-A");
+const delRun = G.leftNormalize({ position: 100, deleted_sequence: "CCC", inserted_sequence: "CC" });
+assert.deepStrictEqual(delRun, { position0: 100, deleted: "C", inserted: "", needsAnchor: true });
+assert.strictEqual(G.variantId("1", delRun, "T"), "1-100-TC-T");
+const insRun = G.leftNormalize({ position: 50, deleted_sequence: "GAGA", inserted_sequence: "GAGAGA" });
+assert.strictEqual(G.variantId("2", insRun, "A"), "2-50-A-AGA");
+assert.strictEqual(G.formatAf(28, 1612340), "0.00001737");
+const g = G.extract(require("./fixture-gnomad.json"), "A");
+assert.strictEqual(g.freqText, "A=0.00001737 (28/1612340, gnomAD)");
+assert.strictEqual(g.homText, "Number of homozygotes (gnomAD total) = 0");
+assert.strictEqual(G.scoresText(g), "CADD: 25.4 | REVEL: 0.933 | SpliceAI: 0.00 | Pangolin: 0.00 | phyloP: 6.38 | PolyPhen (max): 0.999");
+assert.deepStrictEqual(G.extract({ errors: [{ message: "Variant not found" }], data: { variant: null } }, "A"), { found: false });
+
 console.log("all checks passed");

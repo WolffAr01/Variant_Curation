@@ -30,7 +30,21 @@
     throw new Error("rs" + id + " is withdrawn or has no current data in dbSNP.");
   }
 
+  // What each source has returned so far, for the ActX text block.
+  let state = {};
+
+  function updateText() {
+    const g = state.gnomad;
+    const extras = {
+      freq: g && g.found ? [g.freqText, g.homText] : g ? ["Not found in gnomAD v4"] : [],
+      scores: g && g.found && g.predictors.length ? [GnomAD.scoresText(g) + " (gnomAD)"] : [],
+      tail: state.clinvar ? ClinVar.toText(state.clinvar) : "",
+    };
+    $("text").textContent = DbSnp.toText(state.dbsnp, extras);
+  }
+
   function render(r, note) {
+    state = { dbsnp: r };
     const genes = r.genes.length
       ? r.genes.map((g) =>
           "<li><strong>" + esc(g.gene) + "</strong> : " + esc(g.consequences.join(", ") || "no consequence listed") +
@@ -74,6 +88,9 @@
       '<details class="card" open><summary><h2>ClinVar <span class="src">germline classification</span></h2></summary>' +
         '<div id="clinvar">' + (r.alleleId ? '<p class="muted">Looking up allele ID ' + esc(r.alleleId) + " in ClinVar...</p>" : "<p>No ClinVar record for this allele.</p>") + "</div>" +
       "</details>" +
+      '<details class="card" open><summary><h2>gnomAD <span class="src">v4, Total column</span></h2></summary>' +
+        '<div id="gnomad"><p class="muted">Looking up ' + esc(r.matched) + " in gnomAD...</p></div>" +
+      "</details>" +
       '<section class="card"><div class="row"><h3>Text for ActX</h3><button id="copy" type="button">Copy</button></div>' +
         '<pre id="text">' + esc(DbSnp.toText(r)) + "</pre></section>";
 
@@ -87,6 +104,7 @@
     });
 
     if (r.alleleId) loadClinVar(r);
+    loadGnomad(r);
   }
 
   async function getJson(path) {
@@ -122,9 +140,54 @@
           (c.submissions != null ? "<dt>Submissions</dt><dd>" + esc(c.submissions) + "</dd>" : "") +
           (c.lastEvaluated ? "<dt>Last evaluated</dt><dd>" + esc(c.lastEvaluated) + "</dd>" : "") +
         "</dl>";
-      $("text").textContent += "\n\n" + ClinVar.toText(c);
+      if (state.dbsnp !== r) return; // a newer lookup has started
+      state.clinvar = c;
+      updateText();
     } catch (e) {
       box.innerHTML = '<div class="error">Could not load the ClinVar classification. Use the allele ID link above.</div>';
+    }
+  }
+
+  // Convert dbSNP's allele to gnomAD's variant ID, then read the Total column.
+  async function loadGnomad(r) {
+    const box = $("gnomad");
+    const chrom = r.grch38.chrom === "MT" ? "M" : r.grch38.chrom;
+    let id;
+    try {
+      const norm = GnomAD.leftNormalize(r.grch38.spdi);
+      let anchor = null;
+      if (norm.needsAnchor) {
+        // Insertions and deletions need the reference base just before the change.
+        const seq = await getJson("hg38-base/" + chrom + "/" + norm.position0);
+        anchor = String(seq.dna || "").toUpperCase();
+        if (!/^[ACGT]$/.test(anchor)) throw new Error("no reference base");
+      }
+      id = GnomAD.variantId(chrom, norm, anchor);
+      const label = r.matched.includes(">") ? norm.inserted : r.matched;
+      const g = GnomAD.extract(await getJson("gnomad/" + id), label);
+      if (state.dbsnp !== r) return; // a newer lookup has started
+      state.gnomad = g;
+      updateText();
+      if (!g.found) {
+        box.innerHTML = "<p>" + esc(id) + " is not in gnomAD v4 (no carriers observed). " + link(GnomAD.pageUrl(id), "Check on gnomAD") + "</p>";
+        return;
+      }
+      const preds = g.predictors.length
+        ? "<ul>" + g.predictors.map((p) => "<li>" + esc(p.label) + ": " + esc(p.value) + "</li>").join("") + "</ul>"
+        : "<p>No in silico predictors listed.</p>";
+      box.innerHTML =
+        '<dl class="facts">' +
+          "<dt>Variant</dt><dd>" + link(GnomAD.pageUrl(g.variantId), g.variantId + " (GRCh38)") + "</dd>" +
+          "<dt>Total</dt><dd>Allele count " + esc(g.ac) + ", allele number " + esc(g.an) + ", frequency " + esc(g.af) +
+            '<div class="muted">Exomes + genomes' + (g.sources.length < 2 ? " (" + esc(g.sources.join("")) + " only)" : "") +
+            (g.filters.length ? "; filters: " + esc(g.filters.join(", ")) : "") + "</div></dd>" +
+          "<dt>Homozygotes</dt><dd>" + esc(g.hom) + "</dd>" +
+        "</dl>" +
+        "<h3>2. Frequency <span class=\"src\">added to the list</span></h3><ul class=\"plain\"><li><code>" + esc(g.freqText) + "</code></li><li><code>" + esc(g.homText) + "</code></li></ul>" +
+        "<h3>3. Computational scores <span class=\"src\">In Silico Predictors</span></h3>" + preds;
+    } catch (e) {
+      box.innerHTML = '<div class="error">Could not load gnomAD' + (id ? " for " + esc(id) : "") + ". " +
+        link("https://gnomad.broadinstitute.org/", "Search gnomAD directly") + ".</div>";
     }
   }
 

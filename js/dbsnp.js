@@ -237,8 +237,10 @@
     };
   }
 
-  // Plain-text block for pasting into ActX.
-  function toText(r) {
+  // Plain-text block for pasting into ActX, in ActX order. `extras` adds lines
+  // from other sources: freq (after dbSNP's frequencies), scores, and tail.
+  function toText(r, extras) {
+    const x = extras || {};
     const lines = [];
     lines.push(r.rsid + "  " + r.matched + "  chr" + r.grch38.chrom + ":" + r.grch38.position + " (" + r.grch38.assembly + ")");
     lines.push("");
@@ -249,9 +251,15 @@
       lines.push("  No gene annotation (intergenic)");
     }
     lines.push("");
-    lines.push("Frequency (dbSNP)");
+    lines.push("Frequency");
     if (r.frequencies.length) for (const f of r.frequencies) lines.push("  " + f.text);
     else lines.push("  No frequency data in dbSNP");
+    for (const l of x.freq || []) lines.push("  " + l);
+    if (x.scores && x.scores.length) {
+      lines.push("");
+      lines.push("Computational scores");
+      for (const l of x.scores) lines.push("  " + l);
+    }
     lines.push("");
     lines.push("ClinVar (dbSNP Clinical Significance, allele " + r.matched + ")");
     if (r.clinvarAlleleUrl) lines.push("  " + r.clinvarAlleleUrl);
@@ -260,6 +268,7 @@
     } else {
       lines.push("  Not reported in ClinVar for this allele");
     }
+    if (x.tail) lines.push("", x.tail);
     return lines.join("\n");
   }
 
