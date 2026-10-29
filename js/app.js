@@ -44,7 +44,8 @@
       tail: [state.clinvar ? ClinVar.toText(state.clinvar) : "", state.varsome ? "Varsome germline classification\n  " + state.varsome : ""]
         .filter(Boolean).join("\n\n"),
     };
-    $("text").textContent = DbSnp.toText(state.dbsnp, extras);
+    // The ActX text block is hidden for now; this keeps it ready to bring back.
+    if ($("text")) $("text").textContent = DbSnp.toText(state.dbsnp, extras);
   }
 
   function render(r, note) {
@@ -100,18 +101,7 @@
       "</details>" +
       '<details class="card" open><summary><h2>Varsome <span class="src">link only</span></h2></summary>' +
         '<div id="varsome"><p class="muted">Preparing the Varsome link...</p></div>' +
-      "</details>" +
-      '<section class="card"><div class="row"><h3>Text for ActX</h3><button id="copy" type="button">Copy</button></div>' +
-        '<pre id="text">' + esc(DbSnp.toText(r)) + "</pre></section>";
-
-    $("copy").addEventListener("click", async () => {
-      try {
-        await navigator.clipboard.writeText($("text").textContent);
-        $("copy").textContent = "Copied";
-      } catch (e) {
-        $("copy").textContent = "Select the text and copy";
-      }
-    });
+      "</details>";
 
     if (r.alleleId) loadClinVar(r);
     loadGnomad(r);
