@@ -94,3 +94,6 @@ details h3 { margin-top: 16px; }
 .stars { color: #e3a008; letter-spacing: 1px; }
 .stars .off { color: var(--line); }
 button.secondary { background: transparent; color: var(--accent); border: 1px solid var(--accent); padding: 2px 10px; margin-left: 6px; font-size: 13px; vertical-align: middle; }
+label.auto { grid-column: 1 / -1; flex-direction: row; align-items: center; gap: 8px; font-size: 14px; color: var(--text); }
+label.auto input { width: 16px; height: 16px; margin: 0; }
+.auto-note { grid-column: 1 / -1; margin: 0; }

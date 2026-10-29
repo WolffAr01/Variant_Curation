@@ -37,6 +37,49 @@
     else location.assign(url); // pop-ups blocked: fall back to a normal visit
   }
 
+  // Windows opened by "Look up" for Varsome and Franklin, stacked on the right
+  // half of the screen. Browsers only allow pop-ups during the click itself, so
+  // they open blank right away and get their address once the variant is known.
+  let autoWins = {};
+
+  function openAutoWindows() {
+    const w = Math.round(screen.availWidth / 2);
+    const h = Math.round(screen.availHeight / 2);
+    const left = (screen.availLeft || 0) + screen.availWidth - w;
+    const top = screen.availTop || 0;
+    const open = (name, row) => {
+      const win = window.open("", name, "popup,width=" + w + ",height=" + h + ",left=" + left + ",top=" + (top + row * h));
+      if (win) {
+        try {
+          win.document.title = "Loading...";
+          win.document.body.innerHTML = '<p style="font:15px system-ui;padding:16px">Waiting for the variant lookup...</p>';
+        } catch (e) {
+          // The window still shows the previous variant's site; it is replaced shortly.
+        }
+      }
+      return win;
+    };
+    autoWins = { varsome: open("curation-varsome", 0), franklin: open("curation-franklin", 1) };
+    const blocked = !autoWins.varsome || !autoWins.franklin;
+    $("popup-note").hidden = !blocked;
+  }
+
+  function sendAutoWindow(which, url) {
+    const win = autoWins[which];
+    if (win && !win.closed) win.location.href = url;
+    autoWins[which] = null;
+  }
+
+  function closeAutoWindows() {
+    for (const k of Object.keys(autoWins)) if (autoWins[k] && !autoWins[k].closed) autoWins[k].close();
+    autoWins = {};
+  }
+
+  $("auto").addEventListener("change", () => {
+    try { localStorage.setItem("autoOpen", $("auto").checked ? "1" : "0"); } catch (e) { /* not saved */ }
+  });
+  try { if (localStorage.getItem("autoOpen") === "0") $("auto").checked = false; } catch (e) { /* default on */ }
+
   $("result").addEventListener("click", (ev) => {
     const btn = ev.target.closest("button.side");
     if (btn) openBeside(btn.dataset.url);
@@ -187,6 +230,7 @@
       : "https://varsome.com/variant/hg38/" + r.rsid;
     state.varsome = url;
     updateText();
+    sendAutoWindow("varsome", url);
     $("varsome").innerHTML =
       "<p>" + sideLink(url, "Open " + (id ? "chr" + id : r.rsid) + " on Varsome") + "</p>" +
       '<p class="muted">Click Germline Classification on that page for the ACMG rules.' +
@@ -200,6 +244,7 @@
     const url = id
       ? "https://franklin.genoox.com/clinical-db/variant/snp/chr" + id + "-hg38"
       : "https://franklin.genoox.com/clinical-db/home";
+    sendAutoWindow("franklin", url);
     $("franklin").innerHTML =
       "<p>" + sideLink(url, id ? "Open chr" + id + " on Franklin" : "Search Franklin for " + r.rsid) + "</p>" +
       '<p class="muted">Read the Suggested Classification and the met evidence; the UNMET lines can be skipped.' +
@@ -290,12 +335,14 @@
     const params = new URLSearchParams({ rsid: "rs" + want.rsid, ref: $("ref").value.trim(), nuc: $("nuc").value.trim() });
     history.replaceState(null, "", "?" + params);
 
+    if (ev && $("auto").checked) openAutoWindows();
     $("go").disabled = true;
     $("result").innerHTML = '<p class="muted">Looking up rs' + esc(want.rsid) + " in dbSNP...</p>";
     try {
       const { json, note } = await fetchRefsnp(want.rsid);
       render(DbSnp.extract(json, want), note);
     } catch (e) {
+      closeAutoWindows();
       showError(e instanceof TypeError ? "Could not reach the dbSNP relay. Check your connection and try again." : e.message);
     } finally {
       $("go").disabled = false;
