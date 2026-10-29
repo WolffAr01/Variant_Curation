@@ -84,3 +84,12 @@ pre {
 .note, .error { padding: 10px 14px; border-radius: 6px; margin: 16px 0; }
 .note { background: var(--note); }
 .error { background: var(--error); }
+details > summary { cursor: pointer; list-style: none; display: flex; align-items: center; gap: 8px; }
+details > summary::-webkit-details-marker { display: none; }
+details > summary::before { content: "\25B8"; display: inline-block; color: var(--muted); transition: transform 0.15s; }
+details[open] > summary::before { transform: rotate(90deg); }
+details > summary h2 { margin: 0; }
+details[open] > summary { margin-bottom: 12px; }
+details h3 { margin-top: 16px; }
+.stars { color: #e3a008; letter-spacing: 1px; }
+.stars .off { color: var(--line); }

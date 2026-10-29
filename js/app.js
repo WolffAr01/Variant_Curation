@@ -2,7 +2,8 @@
   "use strict";
 
   // dbSNP blocks direct browser requests, so lookups go through our Cloudflare relay (worker/relay.js).
-  const API = "https://variant-curation.wolffar01.workers.dev/dbsnp/";
+  const RELAY = "https://variant-curation.wolffar01.workers.dev/";
+  const API = RELAY + "dbsnp/";
   const RAW_DBSNP = "https://api.ncbi.nlm.nih.gov/variation/v0/refsnp/";
   const $ = (id) => document.getElementById(id);
 
@@ -55,8 +56,7 @@
 
     $("result").innerHTML =
       (notes.length ? '<div class="note">' + notes.map(esc).join("<br>") + "</div>" : "") +
-      '<section class="card">' +
-        "<h2>" + esc(r.rsid) + " &nbsp;" + esc(r.matched) + "</h2>" +
+      '<details class="card" open><summary><h2>dbSNP <span class="src">' + esc(r.rsid) + " " + esc(r.matched) + "</span></h2></summary>" +
         '<dl class="facts">' +
           "<dt>Position</dt><dd>chr" + esc(r.grch38.chrom) + ":" + esc(r.grch38.position) + " (" + esc(r.grch38.assembly) + ")" +
             (r.grch37 ? '<div class="muted">GRCh37: chr' + esc(r.grch37.chrom) + ":" + esc(r.grch37.position) + "</div>" : "") + "</dd>" +
@@ -64,15 +64,18 @@
           "<dt>Variation type</dt><dd>" + esc(r.variantType) + "</dd>" +
           "<dt>dbSNP page</dt><dd>" + link(r.dbsnpUrl) + "</dd>" +
         "</dl>" +
-      "</section>" +
-      '<section class="card"><h3>1. Variant type <span class="src">dbSNP Gene : Consequence</span></h3><ul>' + genes + "</ul></section>" +
-      '<section class="card"><h3>2. Frequency <span class="src">dbSNP</span></h3><ul class="plain">' + freqs + "</ul></section>" +
-      '<section class="card"><h3>ClinVar <span class="src">dbSNP Clinical Significance tab, allele ' + esc(r.matched) + "</span></h3>" +
-        (r.clinvarAlleleUrl ? "<p>ClinVar link for this allele (allele ID " + esc(r.alleleId) + "): " + link(r.clinvarAlleleUrl) + "</p>" : "") +
-        clin + "</section>" +
+        "<h3>1. Variant type <span class=\"src\">Gene : Consequence</span></h3><ul>" + genes + "</ul>" +
+        "<h3>2. Frequency</h3><ul class=\"plain\">" + freqs + "</ul>" +
+        "<h3>Clinical Significance <span class=\"src\">allele " + esc(r.matched) + "</span></h3>" +
+          (r.clinvarAlleleUrl ? "<p>ClinVar link for this allele (allele ID " + esc(r.alleleId) + "): " + link(r.clinvarAlleleUrl) + "</p>" : "") +
+          clin +
+        '<p class="muted">dbSNP build ' + esc(r.build) + ". " + link(RAW_DBSNP + r.rsid.slice(2), "Raw dbSNP data") + "</p>" +
+      "</details>" +
+      '<details class="card" open><summary><h2>ClinVar <span class="src">germline classification</span></h2></summary>' +
+        '<div id="clinvar">' + (r.alleleId ? '<p class="muted">Looking up allele ID ' + esc(r.alleleId) + " in ClinVar...</p>" : "<p>No ClinVar record for this allele.</p>") + "</div>" +
+      "</details>" +
       '<section class="card"><div class="row"><h3>Text for ActX</h3><button id="copy" type="button">Copy</button></div>' +
-        '<pre id="text">' + esc(DbSnp.toText(r)) + "</pre></section>" +
-      '<p class="muted">dbSNP build ' + esc(r.build) + ". " + link(RAW_DBSNP + r.rsid.slice(2), "Raw dbSNP data") + "</p>";
+        '<pre id="text">' + esc(DbSnp.toText(r)) + "</pre></section>";
 
     $("copy").addEventListener("click", async () => {
       try {
@@ -82,6 +85,47 @@
         $("copy").textContent = "Select the text and copy";
       }
     });
+
+    if (r.alleleId) loadClinVar(r);
+  }
+
+  async function getJson(path) {
+    const res = await fetch(RELAY + path);
+    if (!res.ok) throw new Error("HTTP " + res.status);
+    return res.json();
+  }
+
+  // Follow dbSNP's allele ID link: allele ID -> variation ID -> classification.
+  async function loadClinVar(r) {
+    const box = $("clinvar");
+    try {
+      const id = ClinVar.variationIdFromSearch(await getJson("clinvar-search/" + r.alleleId));
+      if (!id) {
+        box.innerHTML = "<p>ClinVar found no record for allele ID " + esc(r.alleleId) + ".</p>";
+        return;
+      }
+      const c = ClinVar.fromSummary(await getJson("clinvar-summary/" + id), id);
+      if (!c) throw new Error("empty summary");
+      try {
+        const res = await fetch(RELAY + "clinvar-vcv/" + id);
+        if (res.ok) ClinVar.addVcvDetails(c, new DOMParser().parseFromString(await res.text(), "text/xml"));
+      } catch (e) {
+        // The counts are a bonus; the summary above is enough to show.
+      }
+      const stars = "&#9733;".repeat(c.stars) + '<span class="off">' + "&#9733;".repeat(4 - c.stars) + "</span>";
+      box.innerHTML =
+        '<dl class="facts">' +
+          "<dt>Description</dt><dd><strong>" + link(c.url, c.title || "Variation " + c.variationId) + "</strong></dd>" +
+          "<dt>Classification</dt><dd><strong>" + esc(c.classification) + "</strong>" +
+            (c.breakdown ? "<div>" + esc(c.breakdown) + "</div>" : "") + "</dd>" +
+          '<dt>Review status</dt><dd><span class="stars">' + stars + "</span> " + esc(c.reviewStatus) + "</dd>" +
+          (c.submissions != null ? "<dt>Submissions</dt><dd>" + esc(c.submissions) + "</dd>" : "") +
+          (c.lastEvaluated ? "<dt>Last evaluated</dt><dd>" + esc(c.lastEvaluated) + "</dd>" : "") +
+        "</dl>";
+      $("text").textContent += "\n\n" + ClinVar.toText(c);
+    } catch (e) {
+      box.innerHTML = '<div class="error">Could not load the ClinVar classification. Use the allele ID link above.</div>';
+    }
   }
 
   function showError(msg) {

@@ -37,4 +37,15 @@ assert.ok(!D.changeMatches(del, D.parseInput("rs1", "C", "delCC")));
 assert.throws(() => D.parseInput("abc", "C", "A"), /rsID/);
 assert.throws(() => D.parseInput("rs1", "C", "X"), /Nucleotide/);
 
+// ClinVar: allele ID search -> variation ID -> classification.
+const C = require("../js/clinvar.js");
+assert.strictEqual(C.variationIdFromSearch(require("./fixture-clinvar-search.json")), "1035131");
+assert.strictEqual(C.variationIdFromSearch({ esearchresult: { idlist: [] } }), null);
+const cv = C.fromSummary(require("./fixture-clinvar-summary.json"), "1035131");
+assert.strictEqual(cv.classification, "Conflicting classifications of pathogenicity");
+assert.strictEqual(cv.stars, 1);
+assert.strictEqual(C.starsFor("reviewed by expert panel"), 3);
+assert.strictEqual(C.starsFor("criteria provided, multiple submitters, no conflicts"), 2);
+assert.strictEqual(C.starsFor("no assertion criteria provided"), 0);
+
 console.log("all checks passed");

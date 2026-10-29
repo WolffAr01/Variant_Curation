@@ -1,0 +1,4 @@
+<?xml version="1.0"?>
+<ClinVarResult-Set><VariationArchive VariationID="1035131" Accession="VCV001035131"><ClassifiedRecord><Classifications>
+<GermlineClassification NumberOfSubmissions="5" NumberOfSubmitters="5"><ReviewStatus>criteria provided, conflicting classifications</ReviewStatus><Description>Conflicting classifications of pathogenicity</Description><Explanation DataSource="ClinVar" Type="public">Pathogenic(1); Likely pathogenic(1); Uncertain significance(3)</Explanation></GermlineClassification>
+</Classifications></ClassifiedRecord></VariationArchive></ClinVarResult-Set>
