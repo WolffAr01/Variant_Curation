@@ -271,7 +271,8 @@
     sendAutoWindow("varsome", url);
     $("varsome").innerHTML =
       "<p>" + sideLink(url, "Open " + (id ? "chr" + id : r.rsid) + " on Varsome") + "</p>" +
-      '<p class="muted">Click Germline Classification on that page for the ACMG rules.' +
+      '<p class="muted">Click Germline Classification on that page for the ACMG rules. ' +
+      "Varsome opens a new window on every search, so close the previous Varsome window." +
       (id ? "" : " Select " + esc(r.matched) + " from the options at the top.") + "</p>";
     showFranklin(r, id);
   }
