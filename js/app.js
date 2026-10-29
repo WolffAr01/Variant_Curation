@@ -1,7 +1,9 @@
 (function () {
   "use strict";
 
-  const API = "https://api.ncbi.nlm.nih.gov/variation/v0/refsnp/";
+  // dbSNP blocks direct browser requests, so lookups go through our Cloudflare relay (worker/relay.js).
+  const API = "https://variant-curation.wolffar01.workers.dev/dbsnp/";
+  const RAW_DBSNP = "https://api.ncbi.nlm.nih.gov/variation/v0/refsnp/";
   const $ = (id) => document.getElementById(id);
 
   function esc(s) {
@@ -70,7 +72,7 @@
         clin + "</section>" +
       '<section class="card"><div class="row"><h3>Text for ActX</h3><button id="copy" type="button">Copy</button></div>' +
         '<pre id="text">' + esc(DbSnp.toText(r)) + "</pre></section>" +
-      '<p class="muted">dbSNP build ' + esc(r.build) + ". " + link(API + r.rsid.slice(2), "Raw dbSNP data") + "</p>";
+      '<p class="muted">dbSNP build ' + esc(r.build) + ". " + link(RAW_DBSNP + r.rsid.slice(2), "Raw dbSNP data") + "</p>";
 
     $("copy").addEventListener("click", async () => {
       try {
@@ -104,7 +106,7 @@
       const { json, note } = await fetchRefsnp(want.rsid);
       render(DbSnp.extract(json, want), note);
     } catch (e) {
-      showError(e instanceof TypeError ? "Could not reach dbSNP. Check your connection and try again." : e.message);
+      showError(e instanceof TypeError ? "Could not reach the dbSNP relay. Check your connection and try again." : e.message);
     } finally {
       $("go").disabled = false;
     }
