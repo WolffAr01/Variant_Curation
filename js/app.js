@@ -27,19 +27,34 @@
     return link(url, text) + " " + sideButton(url);
   }
 
-  // Open (or reuse) a named window at an exact spot. The size given to
-  // window.open is the page area only, so title bars make windows overlap;
-  // the window first loads a blank page of ours so it can be moved and sized
-  // by its outer edges, then goes to `url`.
+  // Height of a pop-up's title and address bars, measured on the first
+  // pop-up and remembered, so windows can be sized to fit their slot.
+  function chromeHeight() {
+    try {
+      const v = Number(localStorage.getItem("popupChrome"));
+      if (v > 0 && v < 300) return v;
+    } catch (e) { /* not stored */ }
+    return 80;
+  }
+
+  // Open (or reuse) a named window so its outer edges fill the given slot.
+  // window.open sizes only the page area, so the bars are subtracted; the
+  // window loads a blank page of ours first so it can be measured and
+  // corrected, then goes to `url`.
   function placeWindow(name, left, top, width, height, url) {
+    const inner = height - chromeHeight();
     const win = window.open("about:blank", name,
-      "popup,width=" + width + ",height=" + height + ",left=" + left + ",top=" + top);
+      "popup,width=" + width + ",height=" + inner + ",left=" + left + ",top=" + top);
     if (!win) return null;
     try {
+      const bars = win.outerHeight - win.innerHeight;
+      if (bars > 0 && bars < 300) {
+        try { localStorage.setItem("popupChrome", String(bars)); } catch (e) { /* not stored */ }
+      }
       win.moveTo(left, top);
       win.resizeTo(width, height);
     } catch (e) {
-      // Some browsers refuse; the window keeps its approximate spot.
+      // Some browsers refuse; the size from window.open still applies.
     }
     if (url) win.location.href = url;
     return win;
