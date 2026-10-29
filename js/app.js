@@ -41,7 +41,8 @@
         ...(g && g.found && g.predictors.length ? [GnomAD.scoresText(g) + " (gnomAD)"] : []),
         ...(state.gerp ? [Ucsc.scoreText(state.gerp)] : []),
       ],
-      tail: state.clinvar ? ClinVar.toText(state.clinvar) : "",
+      tail: [state.clinvar ? ClinVar.toText(state.clinvar) : "", state.varsome ? "Varsome germline classification\n  " + state.varsome : ""]
+        .filter(Boolean).join("\n\n"),
     };
     $("text").textContent = DbSnp.toText(state.dbsnp, extras);
   }
@@ -96,6 +97,9 @@
       "</details>" +
       '<details class="card" open><summary><h2>UCSC Genome Browser <span class="src">GERP, hg19</span></h2></summary>' +
         '<div id="ucsc">' + (r.grch37 ? '<p class="muted">Looking up GERP scores...</p>' : "<p>dbSNP has no GRCh37 position for this variant, so GERP (hg19) can't be looked up.</p>") + "</div>" +
+      "</details>" +
+      '<details class="card" open><summary><h2>Varsome <span class="src">link only</span></h2></summary>' +
+        '<div id="varsome"><p class="muted">Preparing the Varsome link...</p></div>' +
       "</details>" +
       '<section class="card"><div class="row"><h3>Text for ActX</h3><button id="copy" type="button">Copy</button></div>' +
         '<pre id="text">' + esc(DbSnp.toText(r)) + "</pre></section>";
@@ -155,6 +159,21 @@
     }
   }
 
+  // Varsome takes the same chrom-pos-ref-alt ID as gnomAD. Without one, fall
+  // back to the rsID, where Varsome asks you to pick the allele.
+  function showVarsome(r, id) {
+    if (state.dbsnp !== r) return;
+    const url = id
+      ? "https://varsome.com/variant/hg38/chr" + id
+      : "https://varsome.com/variant/hg38/" + r.rsid;
+    state.varsome = url;
+    updateText();
+    $("varsome").innerHTML =
+      "<p>" + link(url, "Open " + (id ? "chr" + id : r.rsid) + " on Varsome") + "</p>" +
+      '<p class="muted">Click Germline Classification on that page for the ACMG rules.' +
+      (id ? "" : " Select " + esc(r.matched) + " from the options at the top.") + "</p>";
+  }
+
   // Convert dbSNP's allele to gnomAD's variant ID, then read the Total column.
   async function loadGnomad(r) {
     const box = $("gnomad");
@@ -170,6 +189,7 @@
         if (!/^[ACGT]$/.test(anchor)) throw new Error("no reference base");
       }
       id = GnomAD.variantId(chrom, norm, anchor);
+      showVarsome(r, id);
       const label = r.matched.includes(">") ? norm.inserted : r.matched;
       const g = GnomAD.extract(await getJson("gnomad/" + id), label);
       if (state.dbsnp !== r) return; // a newer lookup has started
@@ -193,6 +213,7 @@
         "<h3>2. Frequency <span class=\"src\">added to the list</span></h3><ul class=\"plain\"><li><code>" + esc(g.freqText) + "</code></li><li><code>" + esc(g.homText) + "</code></li></ul>" +
         "<h3>3. Computational scores <span class=\"src\">In Silico Predictors</span></h3>" + preds;
     } catch (e) {
+      if (!id) showVarsome(r, null);
       box.innerHTML = '<div class="error">Could not load gnomAD' + (id ? " for " + esc(id) : "") + ". " +
         link("https://gnomad.broadinstitute.org/", "Search gnomAD directly") + ".</div>";
     }
