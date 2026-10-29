@@ -6,6 +6,7 @@
 //   GET /clinvar-vcv/1035131         ->  ClinVar full record (VCV XML) for a variation ID
 //   GET /gnomad/11-19185046-C-A      ->  gnomAD v4 frequencies and in silico predictors
 //   GET /hg38-base/11/19185045       ->  one GRCh38 reference base (1-based position), from UCSC
+//   GET /hg19-gerp/11/19206492/19206693  ->  UCSC hg19 GERP++ scores, 0-based half-open window
 const EUTILS = "https://eutils.ncbi.nlm.nih.gov/entrez/eutils/";
 const NUMBER = /^\d+$/;
 
@@ -49,6 +50,15 @@ const ROUTES = {
         ";start=" + (Number(pos) - 1) + ";end=" + pos;
     },
   },
+  "hg19-gerp": {
+    check: /^([1-9]|1\d|2[0-2]|X|Y|M)\/\d+\/\d+$/,
+    url: (id) => {
+      const [chrom, start, end] = id.split("/");
+      if (Number(end) <= Number(start) || Number(end) - Number(start) > 1000) return null;
+      return "https://api.genome.ucsc.edu/getData/track?genome=hg19;track=allHg19RS_BW;chrom=chr" + chrom +
+        ";start=" + start + ";end=" + end;
+    },
+  },
 };
 
 const CORS = {
@@ -66,7 +76,9 @@ export default {
     const id = decodeURIComponent(rest.join("/"));
     if (!route || !route.check.test(id)) return new Response("Not found", { status: 404, headers: CORS });
 
-    const upstream = await fetch(route.url(id), route.init ? route.init(id) : undefined);
+    const target = route.url(id);
+    if (!target) return new Response("Not found", { status: 404, headers: CORS });
+    const upstream = await fetch(target, route.init ? route.init(id) : undefined);
     return new Response(upstream.body, {
       status: upstream.status,
       headers: {

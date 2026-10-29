@@ -64,4 +64,15 @@ assert.strictEqual(g.homText, "Number of homozygotes (gnomAD total) = 0");
 assert.strictEqual(G.scoresText(g), "CADD: 25.4 | REVEL: 0.933 | SpliceAI: 0.00 | Pangolin: 0.00 | phyloP: 6.38 | PolyPhen (max): 0.999");
 assert.deepStrictEqual(G.extract({ errors: [{ message: "Variant not found" }], data: { variant: null } }, "A"), { found: false });
 
+// UCSC GERP: score at the variant base and window max, both data shapes.
+const U = require("../js/ucsc.js");
+assert.deepStrictEqual(U.window37(19206593), { start: 19206492, end: 19206693 });
+const gerp = U.extract(require("./fixture-gerp.json"), "11", 19206593);
+assert.strictEqual(gerp.atVariant, 5.41);
+assert.strictEqual(gerp.windowMax, 5.41);
+assert.strictEqual(U.scoreText(gerp), "GERP: 5.41 (UCSC, hg19)");
+const nested = { allHg19RS_BW: { chr11: [{ start: 9, end: 10, value: 1.234 }, { start: 10, end: 11, value: 2 }] } };
+assert.deepStrictEqual([U.extract(nested, "11", 10).atVariant, U.extract(nested, "11", 10).windowMax], [1.23, 2]);
+assert.strictEqual(U.extract({}, "11", 10).atVariant, null);
+
 console.log("all checks passed");

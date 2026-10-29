@@ -37,7 +37,10 @@
     const g = state.gnomad;
     const extras = {
       freq: g && g.found ? [g.freqText, g.homText] : g ? ["Not found in gnomAD v4"] : [],
-      scores: g && g.found && g.predictors.length ? [GnomAD.scoresText(g) + " (gnomAD)"] : [],
+      scores: [
+        ...(g && g.found && g.predictors.length ? [GnomAD.scoresText(g) + " (gnomAD)"] : []),
+        ...(state.gerp ? [Ucsc.scoreText(state.gerp)] : []),
+      ],
       tail: state.clinvar ? ClinVar.toText(state.clinvar) : "",
     };
     $("text").textContent = DbSnp.toText(state.dbsnp, extras);
@@ -91,6 +94,9 @@
       '<details class="card" open><summary><h2>gnomAD <span class="src">v4, Total column</span></h2></summary>' +
         '<div id="gnomad"><p class="muted">Looking up ' + esc(r.matched) + " in gnomAD...</p></div>" +
       "</details>" +
+      '<details class="card" open><summary><h2>UCSC Genome Browser <span class="src">GERP, hg19</span></h2></summary>' +
+        '<div id="ucsc">' + (r.grch37 ? '<p class="muted">Looking up GERP scores...</p>' : "<p>dbSNP has no GRCh37 position for this variant, so GERP (hg19) can't be looked up.</p>") + "</div>" +
+      "</details>" +
       '<section class="card"><div class="row"><h3>Text for ActX</h3><button id="copy" type="button">Copy</button></div>' +
         '<pre id="text">' + esc(DbSnp.toText(r)) + "</pre></section>";
 
@@ -105,6 +111,7 @@
 
     if (r.alleleId) loadClinVar(r);
     loadGnomad(r);
+    if (r.grch37) loadGerp(r);
   }
 
   async function getJson(path) {
@@ -188,6 +195,31 @@
     } catch (e) {
       box.innerHTML = '<div class="error">Could not load gnomAD' + (id ? " for " + esc(id) : "") + ". " +
         link("https://gnomad.broadinstitute.org/", "Search gnomAD directly") + ".</div>";
+    }
+  }
+
+  // GERP++ on hg19 around the GRCh37 position, as in the UCSC browser view.
+  async function loadGerp(r) {
+    const box = $("ucsc");
+    const chrom = r.grch37.chrom === "MT" ? "M" : r.grch37.chrom;
+    const pos = r.grch37.position;
+    const url = Ucsc.browserUrl(chrom, pos);
+    try {
+      const w = Ucsc.window37(pos);
+      const g = Ucsc.extract(await getJson("hg19-gerp/" + chrom + "/" + w.start + "/" + w.end), chrom, pos);
+      if (state.dbsnp !== r) return; // a newer lookup has started
+      state.gerp = g;
+      updateText();
+      box.innerHTML =
+        '<dl class="facts">' +
+          "<dt>GERP at variant</dt><dd><strong>" + (g.atVariant === null ? "no score at this base" : esc(g.atVariant)) + "</strong>" +
+            '<div class="muted">chr' + esc(chrom) + ":" + esc(pos) + " (hg19)</div></dd>" +
+          "<dt>Highest in window</dt><dd>" + (g.windowMax === null ? "no scores" : esc(g.windowMax) +
+            '<div class="muted">at chr' + esc(chrom) + ":" + esc(g.windowMaxPos) + ", window chr" + esc(chrom) + ":" + esc(g.window.start + 1) + "-" + esc(g.window.end) + "</div>") + "</dd>" +
+          "<dt>Browser view</dt><dd>" + link(url, "Open in UCSC (variant highlighted)") + "</dd>" +
+        "</dl>";
+    } catch (e) {
+      box.innerHTML = '<div class="error">Could not load GERP scores. ' + link(url, "Open the UCSC browser view") + ".</div>";
     }
   }
 
