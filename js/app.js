@@ -152,6 +152,29 @@
     }
   }
 
+  // "Show here" button: loads the site in a frame under the link. Sites that
+  // forbid framing show a blank or refused box, so the link stays as backup.
+  function addEmbed(box, url) {
+    const btn = document.createElement("button");
+    btn.type = "button";
+    btn.className = "secondary";
+    btn.textContent = "Show here";
+    const holder = document.createElement("div");
+    btn.addEventListener("click", () => {
+      if (holder.firstChild) {
+        holder.innerHTML = "";
+        btn.textContent = "Show here";
+        return;
+      }
+      holder.innerHTML =
+        '<p class="muted">Blank or "refused to connect"? This site doesn\'t allow being shown inside other pages. Use the link above.</p>' +
+        '<iframe class="embed" src="' + esc(url) + '" title="Embedded site" referrerpolicy="no-referrer-when-downgrade"></iframe>';
+      btn.textContent = "Hide";
+    });
+    box.appendChild(btn);
+    box.appendChild(holder);
+  }
+
   // Varsome takes the same chrom-pos-ref-alt ID as gnomAD. Without one, fall
   // back to the rsID, where Varsome asks you to pick the allele.
   function showVarsome(r, id) {
@@ -165,6 +188,7 @@
       "<p>" + link(url, "Open " + (id ? "chr" + id : r.rsid) + " on Varsome") + "</p>" +
       '<p class="muted">Click Germline Classification on that page for the ACMG rules.' +
       (id ? "" : " Select " + esc(r.matched) + " from the options at the top.") + "</p>";
+    addEmbed($("varsome"), url);
     showFranklin(r, id);
   }
 
@@ -178,6 +202,7 @@
       "<p>" + link(url, id ? "Open chr" + id + " on Franklin" : "Search Franklin for " + r.rsid) + "</p>" +
       '<p class="muted">Read the Suggested Classification and the met evidence; the UNMET lines can be skipped.' +
       (id ? "" : " Search for " + esc(r.rsid) + " and select " + esc(r.matched) + ".") + "</p>";
+    addEmbed($("franklin"), url);
   }
 
   // Convert dbSNP's allele to gnomAD's variant ID, then read the Total column.
