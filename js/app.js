@@ -4,6 +4,9 @@
   // dbSNP blocks direct browser requests, so lookups go through our Cloudflare relay (worker/relay.js).
   const RELAY = "https://variant-curation.wolffar01.workers.dev/";
   const API = RELAY + "dbsnp/";
+  // Always ask the relay again rather than reuse a saved answer, so fixes to
+  // the relay show up immediately.
+  const NO_STALE = { cache: "no-cache" };
   const RAW_DBSNP = "https://api.ncbi.nlm.nih.gov/variation/v0/refsnp/";
   const $ = (id) => document.getElementById(id);
 
@@ -125,7 +128,7 @@
 
   // Fetch a refsnp record, following a merge to the current rsID once.
   async function fetchRefsnp(id, note) {
-    const res = await fetch(API + id);
+    const res = await fetch(API + id, NO_STALE);
     if (res.status === 404) throw new Error("dbSNP has no record for rs" + id + ".");
     if (!res.ok) throw new Error("dbSNP did not answer (HTTP " + res.status + "). Try again in a moment.");
     const json = await res.json();
@@ -220,7 +223,7 @@
   }
 
   async function getJson(path) {
-    const res = await fetch(RELAY + path);
+    const res = await fetch(RELAY + path, NO_STALE);
     if (!res.ok) throw new Error("HTTP " + res.status);
     return res.json();
   }
@@ -237,7 +240,7 @@
       const c = ClinVar.fromSummary(await getJson("clinvar-summary/" + id), id);
       if (!c) throw new Error("empty summary");
       try {
-        const res = await fetch(RELAY + "clinvar-vcv/" + id);
+        const res = await fetch(RELAY + "clinvar-vcv/" + id, NO_STALE);
         if (res.ok) ClinVar.addVcvDetails(c, new DOMParser().parseFromString(await res.text(), "text/xml"));
       } catch (e) {
         // The counts are a bonus; the summary above is enough to show.
