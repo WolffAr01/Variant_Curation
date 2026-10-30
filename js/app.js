@@ -156,6 +156,42 @@
     };
     // The ActX text block is hidden for now; this keeps it ready to bring back.
     if ($("text")) $("text").textContent = DbSnp.toText(state.dbsnp, extras);
+    renderSummary();
+  }
+
+  // Summary box at the top, in ActX order. Each line fills in as its source answers.
+  function renderSummary() {
+    const box = $("summary");
+    if (!box) return;
+    const r = state.dbsnp, g = state.gnomad, ge = state.gerp;
+    const li = (t) => "<li>" + esc(t) + "</li>";
+    const pending = (t) => '<li class="muted">' + esc(t) + "</li>";
+
+    const types = r.genes.length
+      ? r.genes.map((x) => li(x.gene + " : " + (x.consequences.join(", ") || "no consequence listed"))).join("")
+      : li("No gene annotation (intergenic)");
+
+    let freqs = r.frequencies.map((f) => li(f.text)).join("") || li("No frequency data in dbSNP");
+    if (r.notObserved) freqs += li(r.freqAllele + " was not observed in any population study.");
+    if (g && g.found) freqs += li(g.freqText) + (g.homText ? li(g.homText) : "");
+    else if (g) freqs += li("Not found in gnomAD v4");
+    else if (state.gnomadFailed) freqs += li("gnomAD could not be loaded");
+    else freqs += pending("Waiting for gnomAD...");
+
+    let scores = "";
+    if (g && g.found) scores += g.predictors.map((p) => li(p.label + ": " + p.value + " (gnomAD)")).join("") || li("No in silico predictors in gnomAD");
+    else if (g) scores += li("No gnomAD scores (variant not in gnomAD)");
+    else if (state.gnomadFailed) scores += li("gnomAD scores could not be loaded");
+    else scores += pending("Waiting for gnomAD...");
+    if (ge) scores += li(Ucsc.scoreText(ge));
+    else if (!r.grch37) scores += li("GERP: no GRCh37 position in dbSNP");
+    else if (state.gerpFailed) scores += li("GERP could not be loaded");
+    else scores += pending("Waiting for UCSC GERP...");
+
+    box.innerHTML =
+      "<h3>Variant type <span class=\"src\">dbSNP Gene : Consequence</span></h3><ul class=\"plain\">" + types + "</ul>" +
+      "<h3>Frequency summary <span class=\"src\">dbSNP and gnomAD</span></h3><ul class=\"plain mono\">" + freqs + "</ul>" +
+      "<h3>Computational scores <span class=\"src\">gnomAD and UCSC Genome Browser</span></h3><ul class=\"plain\">" + scores + "</ul>";
   }
 
   function render(r, note) {
@@ -185,6 +221,9 @@
 
     $("result").innerHTML =
       (notes.length ? '<div class="note">' + notes.map(esc).join("<br>") + "</div>" : "") +
+      '<details class="card summary" open><summary><h2>Summary <span class="src">' + esc(r.rsid) + " " + esc(r.matched) + "</span></h2></summary>" +
+        '<div id="summary"></div>' +
+      "</details>" +
       '<details class="card" open><summary><h2>dbSNP <span class="src">' + esc(r.rsid) + " " + esc(r.matched) + "</span></h2></summary>" +
         '<dl class="facts">' +
           "<dt>Position</dt><dd>chr" + esc(r.grch38.chrom) + ":" + esc(r.grch38.position) + " (" + esc(r.grch38.assembly) + ")" +
@@ -193,8 +232,8 @@
           "<dt>Variation type</dt><dd>" + esc(r.variantType) + "</dd>" +
           "<dt>dbSNP page</dt><dd>" + sideLink(r.dbsnpUrl) + "</dd>" +
         "</dl>" +
-        "<h3>1. Variant type <span class=\"src\">Gene : Consequence</span></h3><ul>" + genes + "</ul>" +
-        "<h3>2. Frequency</h3><ul class=\"plain\">" + freqs + "</ul>" +
+        "<h3>Variant type <span class=\"src\">Gene : Consequence</span></h3><ul>" + genes + "</ul>" +
+        "<h3>Frequency</h3><ul class=\"plain\">" + freqs + "</ul>" +
           (r.notObserved ? '<p class="note">' + esc(r.freqAllele) + " was not observed in any population study.</p>" : "") +
         "<h3>Clinical Significance <span class=\"src\">allele " + esc(r.matched) + "</span></h3>" +
           (r.clinvarAlleleUrl ? "<p>ClinVar link for this allele (allele ID " + esc(r.alleleId) + "): " + sideLink(r.clinvarAlleleUrl) + "</p>" : "") +
@@ -217,6 +256,7 @@
         '<div id="franklin"><p class="muted">Preparing the Franklin link...</p></div>' +
       "</details>";
 
+    renderSummary();
     if (r.alleleId) loadClinVar(r);
     loadGnomad(r);
     if (r.grch37) loadGerp(r);
@@ -325,18 +365,13 @@
       box.innerHTML =
         '<dl class="facts">' +
           "<dt>Variant</dt><dd>" + sideLink(GnomAD.pageUrl(g.variantId), g.variantId + " (GRCh38)") + "</dd>" +
-          (g.total
-            ? "<dt>Total</dt><dd>Allele count " + esc(g.total.ac) + ", allele number " + esc(g.total.an) + ", frequency " + esc(g.total.af) +
-                '<div class="muted">gnomAD Total column' + (g.filters.length ? "; filters: " + esc(g.filters.join(", ")) : "") + "</div></dd>" +
-              "<dt>Homozygotes</dt><dd>" + esc(g.total.hom) + "</dd>"
-            : "<dt>Total</dt><dd><strong>No gnomAD Total found</strong></dd>") +
-          "<dt>Raw data</dt><dd>" + link(RELAY + "gnomad/" + g.variantId, "What gnomAD returned") + "</dd>" +
         "</dl>" +
-        "<h3>2. Frequency <span class=\"src\">added to the list</span></h3><ul class=\"plain\"><li><code>" + esc(g.freqText) + "</code></li>" +
+        "<h3>Frequency <span class=\"src\">gnomAD Total column</span></h3><ul class=\"plain\"><li><code>" + esc(g.freqText) + "</code></li>" +
           (g.homText ? "<li><code>" + esc(g.homText) + "</code></li>" : "") + "</ul>" +
-        "<h3>3. Computational scores <span class=\"src\">In Silico Predictors</span></h3>" + preds;
+        "<h3>Computational scores <span class=\"src\">In Silico Predictors</span></h3>" + preds;
     } catch (e) {
       if (!id) showVarsome(r, null);
+      if (state.dbsnp === r) { state.gnomadFailed = true; renderSummary(); }
       box.innerHTML = '<div class="error">Could not load gnomAD' + (id ? " for " + esc(id) : "") + ". " +
         link("https://gnomad.broadinstitute.org/", "Search gnomAD directly") + ".</div>";
     }
@@ -361,6 +396,7 @@
           "<dt>Browser view</dt><dd>" + sideLink(url, "Open in UCSC (variant highlighted)") + "</dd>" +
         "</dl>";
     } catch (e) {
+      if (state.dbsnp === r) { state.gerpFailed = true; renderSummary(); }
       box.innerHTML = '<div class="error">Could not load GERP scores. ' + link(url, "Open the UCSC browser view") + ".</div>";
     }
   }

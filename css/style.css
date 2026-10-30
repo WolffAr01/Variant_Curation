@@ -97,3 +97,6 @@ button.secondary { background: transparent; color: var(--accent); border: 1px so
 label.auto { grid-column: 1 / -1; flex-direction: row; align-items: center; gap: 8px; font-size: 14px; color: var(--text); }
 label.auto input { width: 16px; height: 16px; margin: 0; }
 .auto-note { grid-column: 1 / -1; margin: 0; }
+.summary { border-left: 4px solid var(--accent); }
+.summary h3:first-child { margin-top: 0; }
+ul.mono li { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 13px; }
