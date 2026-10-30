@@ -10,13 +10,14 @@
 const EUTILS = "https://eutils.ncbi.nlm.nih.gov/entrez/eutils/";
 const NUMBER = /^\d+$/;
 
-// `joint` is gnomAD's own Total column (exomes and genomes combined).
+// `joint` is gnomAD's own Total column (exomes and genomes combined). Field
+// names follow the query the gnomAD browser's variant page sends.
 const gnomadQuery = (withJoint) => `query ($id: String!) {
   variant(variantId: $id, dataset: gnomad_r4) {
     variant_id
-    ${withJoint ? "joint { ac an homozygote_count }" : ""}
-    exome { ac an homozygote_count filters }
-    genome { ac an homozygote_count filters }
+    ${withJoint ? "joint { ac an homozygote_count filters }" : ""}
+    exome { ac an filters }
+    genome { ac an filters }
     in_silico_predictors { id value }
   }
 }`;

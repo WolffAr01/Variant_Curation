@@ -327,6 +327,7 @@
                 '<div class="muted">gnomAD Total column' + (g.filters.length ? "; filters: " + esc(g.filters.join(", ")) : "") + "</div></dd>" +
               "<dt>Homozygotes</dt><dd>" + esc(g.total.hom) + "</dd>"
             : "<dt>Total</dt><dd><strong>No gnomAD Total found</strong></dd>") +
+          "<dt>Raw data</dt><dd>" + link(RELAY + "gnomad/" + g.variantId, "What gnomAD returned") + "</dd>" +
         "</dl>" +
         "<h3>2. Frequency <span class=\"src\">added to the list</span></h3><ul class=\"plain\"><li><code>" + esc(g.freqText) + "</code></li>" +
           (g.homText ? "<li><code>" + esc(g.homText) + "</code></li>" : "") + "</ul>" +
