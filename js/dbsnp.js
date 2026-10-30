@@ -228,6 +228,9 @@
       grch37,
       genes: geneConsequences(annotation),
       frequencies,
+      freqAllele,
+      // Studies report this allele, but every one counted zero carriers.
+      notObserved: frequencies.length > 0 && frequencies.every((f) => !f.count),
       clinical,
       clinvarAlleleUrl: alleleId
         ? "https://www.ncbi.nlm.nih.gov/clinvar/?term=" + alleleId + "%5Balleleid%5D"

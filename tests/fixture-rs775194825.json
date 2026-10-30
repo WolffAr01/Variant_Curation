@@ -5,43 +5,198 @@
     "variant_type": "snv",
     "placements_with_allele": [
       {
-        "seq_id": "NC_000011.10", "is_ptlp": true,
-        "placement_annot": {"seq_id_traits_by_assembly": [{"assembly_name": "GRCh38.p14"}]},
+        "seq_id": "NC_000011.10",
+        "is_ptlp": true,
+        "placement_annot": {
+          "seq_id_traits_by_assembly": [
+            {
+              "assembly_name": "GRCh38.p14"
+            }
+          ]
+        },
         "alleles": [
-          {"allele": {"spdi": {"seq_id": "NC_000011.10", "position": 19185045, "deleted_sequence": "C", "inserted_sequence": "C"}}},
-          {"allele": {"spdi": {"seq_id": "NC_000011.10", "position": 19185045, "deleted_sequence": "C", "inserted_sequence": "A"}}},
-          {"allele": {"spdi": {"seq_id": "NC_000011.10", "position": 19185045, "deleted_sequence": "C", "inserted_sequence": "T"}}}
+          {
+            "allele": {
+              "spdi": {
+                "seq_id": "NC_000011.10",
+                "position": 19185045,
+                "deleted_sequence": "C",
+                "inserted_sequence": "C"
+              }
+            }
+          },
+          {
+            "allele": {
+              "spdi": {
+                "seq_id": "NC_000011.10",
+                "position": 19185045,
+                "deleted_sequence": "C",
+                "inserted_sequence": "A"
+              }
+            }
+          },
+          {
+            "allele": {
+              "spdi": {
+                "seq_id": "NC_000011.10",
+                "position": 19185045,
+                "deleted_sequence": "C",
+                "inserted_sequence": "T"
+              }
+            }
+          }
         ]
       },
       {
-        "seq_id": "NC_000011.9", "is_ptlp": false,
-        "placement_annot": {"seq_id_traits_by_assembly": [{"assembly_name": "GRCh37.p13"}]},
+        "seq_id": "NC_000011.9",
+        "is_ptlp": false,
+        "placement_annot": {
+          "seq_id_traits_by_assembly": [
+            {
+              "assembly_name": "GRCh37.p13"
+            }
+          ]
+        },
         "alleles": [
-          {"allele": {"spdi": {"seq_id": "NC_000011.9", "position": 19206592, "deleted_sequence": "C", "inserted_sequence": "C"}}},
-          {"allele": {"spdi": {"seq_id": "NC_000011.9", "position": 19206592, "deleted_sequence": "C", "inserted_sequence": "A"}}},
-          {"allele": {"spdi": {"seq_id": "NC_000011.9", "position": 19206592, "deleted_sequence": "C", "inserted_sequence": "T"}}}
+          {
+            "allele": {
+              "spdi": {
+                "seq_id": "NC_000011.9",
+                "position": 19206592,
+                "deleted_sequence": "C",
+                "inserted_sequence": "C"
+              }
+            }
+          },
+          {
+            "allele": {
+              "spdi": {
+                "seq_id": "NC_000011.9",
+                "position": 19206592,
+                "deleted_sequence": "C",
+                "inserted_sequence": "A"
+              }
+            }
+          },
+          {
+            "allele": {
+              "spdi": {
+                "seq_id": "NC_000011.9",
+                "position": 19206592,
+                "deleted_sequence": "C",
+                "inserted_sequence": "T"
+              }
+            }
+          }
         ]
       }
     ],
     "allele_annotations": [
-      {"frequency": [], "clinical": [], "assembly_annotation": []},
-      {
-        "frequency": [
-          {"study_name": "GnomAD_genomes", "allele_count": 2, "total_count": 149264},
-          {"study_name": "ExAC", "allele_count": 1, "total_count": 121018},
-          {"study_name": "ALFA", "allele_count": 4, "total_count": 119022},
-          {"study_name": "PAGE_STUDY", "allele_count": 0, "total_count": 78702}
-        ],
-        "clinical": [
-          {"accession_version": "RCV001571457.3", "allele_id": 1194479, "disease_names": ["not provided"], "clinical_significances": ["uncertain-significance"]},
-          {"accession_version": "RCV001882679.5", "allele_id": 1194479, "disease_names": ["Dilated cardiomyopathy 1M", "Hypertrophic cardiomyopathy 12"], "clinical_significances": ["likely-pathogenic"]},
-          {"accession_version": "RCV002329681.2", "allele_id": 1194479, "disease_names": ["Cardiovascular phenotype"], "clinical_significances": ["uncertain-significance"]}
-        ],
-        "assembly_annotation": [{"seq_id": "NC_000011.10", "genes": [{"locus": "CSRP3", "sequence_ontology": [], "rnas": [{"id": "NM_003476.5", "hgvs": "NM_003476.5:c.415-1G>T", "sequence_ontology": [{"name": "splice_acceptor_variant"}]}]}]}]
-      },
       {
         "frequency": [],
-        "clinical": [{"accession_version": "RCV001035131.1", "allele_id": 852335, "disease_names": ["Dilated cardiomyopathy 1M", "Hypertrophic cardiomyopathy 12"], "clinical_significances": ["uncertain-significance"]}],
+        "clinical": [],
+        "assembly_annotation": []
+      },
+      {
+        "frequency": [
+          {
+            "study_name": "GnomAD_genomes",
+            "allele_count": 2,
+            "total_count": 149264
+          },
+          {
+            "study_name": "ExAC",
+            "allele_count": 1,
+            "total_count": 121018
+          },
+          {
+            "study_name": "ALFA",
+            "allele_count": 4,
+            "total_count": 119022
+          },
+          {
+            "study_name": "PAGE_STUDY",
+            "allele_count": 0,
+            "total_count": 78702
+          }
+        ],
+        "clinical": [
+          {
+            "accession_version": "RCV001571457.3",
+            "allele_id": 1194479,
+            "disease_names": [
+              "not provided"
+            ],
+            "clinical_significances": [
+              "uncertain-significance"
+            ]
+          },
+          {
+            "accession_version": "RCV001882679.5",
+            "allele_id": 1194479,
+            "disease_names": [
+              "Dilated cardiomyopathy 1M",
+              "Hypertrophic cardiomyopathy 12"
+            ],
+            "clinical_significances": [
+              "likely-pathogenic"
+            ]
+          },
+          {
+            "accession_version": "RCV002329681.2",
+            "allele_id": 1194479,
+            "disease_names": [
+              "Cardiovascular phenotype"
+            ],
+            "clinical_significances": [
+              "uncertain-significance"
+            ]
+          }
+        ],
+        "assembly_annotation": [
+          {
+            "seq_id": "NC_000011.10",
+            "genes": [
+              {
+                "locus": "CSRP3",
+                "sequence_ontology": [],
+                "rnas": [
+                  {
+                    "id": "NM_003476.5",
+                    "hgvs": "NM_003476.5:c.415-1G>T",
+                    "sequence_ontology": [
+                      {
+                        "name": "splice_acceptor_variant"
+                      }
+                    ]
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "frequency": [
+          {
+            "study_name": "PAGE_STUDY",
+            "allele_count": 0,
+            "total_count": 78702
+          }
+        ],
+        "clinical": [
+          {
+            "accession_version": "RCV001035131.1",
+            "allele_id": 852335,
+            "disease_names": [
+              "Dilated cardiomyopathy 1M",
+              "Hypertrophic cardiomyopathy 12"
+            ],
+            "clinical_significances": [
+              "uncertain-significance"
+            ]
+          }
+        ],
         "assembly_annotation": []
       }
     ]

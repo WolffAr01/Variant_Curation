@@ -10,14 +10,30 @@
 const EUTILS = "https://eutils.ncbi.nlm.nih.gov/entrez/eutils/";
 const NUMBER = /^\d+$/;
 
-const GNOMAD_QUERY = `query ($id: String!) {
+// `joint` is gnomAD's own Total column (exomes and genomes combined).
+const gnomadQuery = (withJoint) => `query ($id: String!) {
   variant(variantId: $id, dataset: gnomad_r4) {
     variant_id
+    ${withJoint ? "joint { ac an homozygote_count }" : ""}
     exome { ac an homozygote_count filters }
     genome { ac an homozygote_count filters }
     in_silico_predictors { id value }
   }
 }`;
+
+async function fetchGnomad(id) {
+  const ask = (withJoint) => fetch("https://gnomad.broadinstitute.org/api", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ query: gnomadQuery(withJoint), variables: { id } }),
+  });
+  const res = await ask(true);
+  const text = await res.text();
+  // If this gnomAD API version has no joint field, ask again without it;
+  // the page then reports that no gnomAD Total was found.
+  if (/Cannot query field\W*joint/.test(text)) return ask(false);
+  return new Response(text, { status: res.status, headers: res.headers });
+}
 
 const ROUTES = {
   dbsnp: { check: NUMBER, url: (id) => "https://api.ncbi.nlm.nih.gov/variation/v0/refsnp/" + id },
@@ -35,12 +51,7 @@ const ROUTES = {
   },
   gnomad: {
     check: /^([1-9]|1\d|2[0-2]|X|Y|M)-\d+-[ACGT]+-[ACGT]+$/,
-    url: () => "https://gnomad.broadinstitute.org/api",
-    init: (id) => ({
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ query: GNOMAD_QUERY, variables: { id } }),
-    }),
+    fetch: fetchGnomad,
   },
   "hg38-base": {
     check: /^([1-9]|1\d|2[0-2]|X|Y|M)\/\d+$/,
@@ -76,9 +87,14 @@ export default {
     const id = decodeURIComponent(rest.join("/"));
     if (!route || !route.check.test(id)) return new Response("Not found", { status: 404, headers: CORS });
 
-    const target = route.url(id);
-    if (!target) return new Response("Not found", { status: 404, headers: CORS });
-    const upstream = await fetch(target, route.init ? route.init(id) : undefined);
+    let upstream;
+    if (route.fetch) {
+      upstream = await route.fetch(id);
+    } else {
+      const target = route.url(id);
+      if (!target) return new Response("Not found", { status: 404, headers: CORS });
+      upstream = await fetch(target);
+    }
     return new Response(upstream.body, {
       status: upstream.status,
       headers: {

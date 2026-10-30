@@ -40,7 +40,9 @@
     polyphen_max: "PolyPhen (max)",
   };
 
-  // GraphQL response -> Total column (exomes + genomes) and predictors.
+  // GraphQL response -> gnomAD's own Total column (`joint`) and predictors.
+  // Exome and genome counts are never added up here: when a variant is missing
+  // from one of them, gnomAD's Total still counts that data set's allele number.
   function extract(json, alleleLabel) {
     const v = ((json || {}).data || {}).variant;
     if (!v) {
@@ -48,19 +50,16 @@
       if (/not found/i.test(msg)) return { found: false };
       throw new Error(msg || "gnomAD returned no data");
     }
-    const parts = [v.exome, v.genome].filter(Boolean);
-    const sum = (k) => parts.reduce((n, p) => n + (p[k] || 0), 0);
-    const ac = sum("ac"), an = sum("an"), hom = sum("homozygote_count");
-    const af = formatAf(ac, an);
-    const filters = parts.flatMap((p) => p.filters || []);
+    const j = v.joint;
+    const total = j && j.an ? { ac: j.ac || 0, an: j.an, hom: j.homozygote_count || 0, af: formatAf(j.ac || 0, j.an) } : null;
     return {
       found: true,
       variantId: v.variant_id,
-      ac, an, hom, af,
+      total,
       sources: [v.exome && "exomes", v.genome && "genomes"].filter(Boolean),
-      filters,
-      freqText: alleleLabel + "=" + af + " (" + ac + "/" + an + ", gnomAD)",
-      homText: "Number of homozygotes (gnomAD total) = " + hom,
+      filters: [v.exome, v.genome].filter(Boolean).flatMap((p) => p.filters || []),
+      freqText: total ? alleleLabel + "=" + total.af + " (" + total.ac + "/" + total.an + ", gnomAD)" : "No gnomAD Total found",
+      homText: total ? "Number of homozygotes (gnomAD total) = " + total.hom : "",
       predictors: (v.in_silico_predictors || []).map((p) => ({
         id: p.id,
         label: PREDICTORS[p.id] || p.id,

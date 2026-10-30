@@ -143,7 +143,7 @@
   function updateText() {
     const g = state.gnomad;
     const extras = {
-      freq: g && g.found ? [g.freqText, g.homText] : g ? ["Not found in gnomAD v4"] : [],
+      freq: g && g.found ? [g.freqText, g.homText].filter(Boolean) : g ? ["Not found in gnomAD v4"] : [],
       scores: [
         ...(g && g.found && g.predictors.length ? [GnomAD.scoresText(g) + " (gnomAD)"] : []),
         ...(state.gerp ? [Ucsc.scoreText(state.gerp)] : []),
@@ -192,6 +192,7 @@
         "</dl>" +
         "<h3>1. Variant type <span class=\"src\">Gene : Consequence</span></h3><ul>" + genes + "</ul>" +
         "<h3>2. Frequency</h3><ul class=\"plain\">" + freqs + "</ul>" +
+          (r.notObserved ? '<p class="note">' + esc(r.freqAllele) + " was not observed in any population study.</p>" : "") +
         "<h3>Clinical Significance <span class=\"src\">allele " + esc(r.matched) + "</span></h3>" +
           (r.clinvarAlleleUrl ? "<p>ClinVar link for this allele (allele ID " + esc(r.alleleId) + "): " + sideLink(r.clinvarAlleleUrl) + "</p>" : "") +
           clin +
@@ -321,12 +322,14 @@
       box.innerHTML =
         '<dl class="facts">' +
           "<dt>Variant</dt><dd>" + sideLink(GnomAD.pageUrl(g.variantId), g.variantId + " (GRCh38)") + "</dd>" +
-          "<dt>Total</dt><dd>Allele count " + esc(g.ac) + ", allele number " + esc(g.an) + ", frequency " + esc(g.af) +
-            '<div class="muted">Exomes + genomes' + (g.sources.length < 2 ? " (" + esc(g.sources.join("")) + " only)" : "") +
-            (g.filters.length ? "; filters: " + esc(g.filters.join(", ")) : "") + "</div></dd>" +
-          "<dt>Homozygotes</dt><dd>" + esc(g.hom) + "</dd>" +
+          (g.total
+            ? "<dt>Total</dt><dd>Allele count " + esc(g.total.ac) + ", allele number " + esc(g.total.an) + ", frequency " + esc(g.total.af) +
+                '<div class="muted">gnomAD Total column' + (g.filters.length ? "; filters: " + esc(g.filters.join(", ")) : "") + "</div></dd>" +
+              "<dt>Homozygotes</dt><dd>" + esc(g.total.hom) + "</dd>"
+            : "<dt>Total</dt><dd><strong>No gnomAD Total found</strong></dd>") +
         "</dl>" +
-        "<h3>2. Frequency <span class=\"src\">added to the list</span></h3><ul class=\"plain\"><li><code>" + esc(g.freqText) + "</code></li><li><code>" + esc(g.homText) + "</code></li></ul>" +
+        "<h3>2. Frequency <span class=\"src\">added to the list</span></h3><ul class=\"plain\"><li><code>" + esc(g.freqText) + "</code></li>" +
+          (g.homText ? "<li><code>" + esc(g.homText) + "</code></li>" : "") + "</ul>" +
         "<h3>3. Computational scores <span class=\"src\">In Silico Predictors</span></h3>" + preds;
     } catch (e) {
       if (!id) showVarsome(r, null);

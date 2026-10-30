@@ -20,6 +20,12 @@ assert.ok(r.clinvarAlleleUrl.includes("1194479"));
 // The T allele returns only its own ClinVar record.
 assert.deepStrictEqual(D.extract(fx, D.parseInput("775194825", "c", "t")).clinical.map((c) => c.accession), ["RCV001035131.1"]);
 
+// An allele whose studies all counted zero carriers is flagged as not observed.
+const rT = D.extract(fx, D.parseInput("rs775194825", "C", "T"));
+assert.strictEqual(rT.notObserved, true);
+assert.strictEqual(rT.freqAllele, "T");
+assert.strictEqual(r.notObserved, false);
+
 // Gene-strand input (G>T) matches on the reverse strand.
 assert.strictEqual(D.extract(fx, D.parseInput("rs775194825", "G", "T")).strand, "reverse");
 
@@ -63,6 +69,14 @@ assert.strictEqual(g.freqText, "A=0.00001737 (28/1612340, gnomAD)");
 assert.strictEqual(g.homText, "Number of homozygotes (gnomAD total) = 0");
 assert.strictEqual(G.scoresText(g), "CADD: 25.4 | REVEL: 0.933 | SpliceAI: 0.00 | Pangolin: 0.00 | phyloP: 6.38 | PolyPhen (max): 0.999");
 assert.deepStrictEqual(G.extract({ errors: [{ message: "Variant not found" }], data: { variant: null } }, "A"), { found: false });
+// Exome-only variant: gnomAD's Total uses exome + genome allele numbers, so
+// only the joint figure is used, never an exome-only sum.
+const exomeOnly = { data: { variant: { variant_id: "1-1-C-T", joint: { ac: 2, an: 1626000, homozygote_count: 0 },
+  exome: { ac: 2, an: 1460000, homozygote_count: 0, filters: [] }, genome: null, in_silico_predictors: [] } } };
+assert.strictEqual(G.extract(exomeOnly, "T").freqText, "T=0.000001230 (2/1626000, gnomAD)");
+const noJoint = { data: { variant: { variant_id: "1-1-C-T", exome: { ac: 2, an: 1460000, homozygote_count: 0, filters: [] }, genome: null, in_silico_predictors: [] } } };
+assert.strictEqual(G.extract(noJoint, "T").freqText, "No gnomAD Total found");
+assert.strictEqual(G.extract(noJoint, "T").homText, "");
 
 // UCSC GERP: score at the variant base, both data shapes.
 const U = require("../js/ucsc.js");
